@@ -17,6 +17,9 @@ st.set_page_config(
     layout="wide"
 )
 
+if "ranked_candidates" not in st.session_state:
+    st.session_state["ranked_candidates"] = None
+
 st.markdown("""
 <style>
 
@@ -204,6 +207,8 @@ if analyze:
 
         jd_text = clean_text(jd_text)
         job_profile = build_job_profile(jd_text)
+
+        st.session_state["job_profile"] = job_profile
         
 
     else:
@@ -216,7 +221,7 @@ if analyze:
         )
 
         candidate_results = []
-
+        
         for resume in uploaded_resumes:
 
             text = extract_text(resume)
@@ -235,181 +240,280 @@ if analyze:
                 }
             )
 
+            st.session_state["candidate_results"] = candidate_results
+
         ranked_candidates = rank_candidates(candidate_results)
+        st.session_state["ranked_candidates"] = ranked_candidates
 
-        # -----------------------------
-        # Dashboard Statistics
-        # -----------------------------
+# -----------------------------
+# Dashboard Statistics
+# -----------------------------
 
-        total_candidates = len(candidate_results)
+if st.session_state["ranked_candidates"] is not None:
+    ranked_candidates = st.session_state["ranked_candidates"]
+    candidate_results = st.session_state["candidate_results"]
+    job_profile = st.session_state["job_profile"]
 
-        best_score = ranked_candidates[0]["score"]["final_score"]
+    total_candidates = len(candidate_results)
 
-        avg_score = (
-            sum(c["score"]["final_score"] for c in candidate_results)
-            / total_candidates
+    best_score = ranked_candidates[0]["score"]["final_score"]
+
+    avg_score = (
+        sum(c["score"]["final_score"] for c in candidate_results)
+        / total_candidates
+    )
+
+    st.markdown("## 📊 Recruitment Summary")
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.metric(
+            label="👥 Candidates",
+            value=total_candidates
         )
 
-        st.markdown("## 📊 Recruitment Summary")
+    with col2:
+        st.metric(
+            label="🏆 Best Match",
+            value=f"{best_score:.1f}%"
+        )
 
-        col1, col2, col3, col4 = st.columns(4)
+    with col3:
+        st.metric(
+            label="⭐ Average",
+            value=f"{avg_score:.1f}%"
+        )
+
+    with col4:
+        st.metric(
+            label="⚡ Processing",
+            value="AI Powered"
+        )
+
+    st.divider()
+
+    import pandas as pd
+    import json
+
+    if "ranked_candidates" in st.session_state:
+        ranked_candidates = st.session_state["ranked_candidates"]
+
+    st.header("🏆 Ranked Candidates")
+
+    for rank, candidate in enumerate(ranked_candidates, start=1):
+
+        profile = candidate["profile"]
+        score = candidate["score"]
+
+        st.markdown("---")
+
+        st.markdown(
+            """
+            <div style="
+                background:#161b22;
+                border:1px solid #30363d;
+                border-radius:16px;
+                padding:25px;
+                margin-bottom:30px;
+            ">
+            """,
+            unsafe_allow_html=True
+        )
+
+        st.markdown(f"## 🥇 Rank #{rank}")
+
+        st.markdown(
+            f"<h2 style='margin-bottom:0px;'>{profile['name']}</h2>",
+            unsafe_allow_html=True
+        )
+
+        st.caption("AI Screened Candidate")
+
+        col1, col2, col3 = st.columns(3)
 
         with col1:
             st.metric(
-                label="👥 Candidates",
-                value=total_candidates
+                "Overall Match",
+                f"{score['final_score']:.1f}%"
             )
+            st.progress(score["final_score"] / 100)
 
         with col2:
             st.metric(
-                label="🏆 Best Match",
-                value=f"{best_score:.1f}%"
+                "Skill Match",
+                f"{score['skill_score']:.1f}%"
             )
+            st.progress(score["skill_score"] / 100)
 
         with col3:
             st.metric(
-                label="⭐ Average",
-                value=f"{avg_score:.1f}%"
+                "Semantic Match",
+                f"{score['semantic_score']:.1f}%"
+            )
+            st.progress(score["semantic_score"] / 100)
+
+        # Match Badge
+        score_value = score["final_score"]
+
+        if score_value >= 80:
+            st.success("⭐ Highly Recommended")
+
+        elif score_value >= 60:
+            st.info("✅ Recommended")
+
+        elif score_value >= 40:
+            st.warning("⚠ Needs Review")
+
+        else:
+            st.error("❌ Requires Manual Review")
+
+        st.divider()
+
+        # -----------------------------
+        # Download Ranked Results
+        # -----------------------------
+
+        download_data = []
+
+        for i, cand in enumerate(ranked_candidates, start=1):
+
+            profile = cand["profile"]
+            score = cand["score"]
+
+            download_data.append({
+
+                "Rank": i,
+                "Candidate Name": profile["name"],
+
+                "Overall Match (%)": score["final_score"],
+                "Skill Match (%)": score["skill_score"],
+                "Semantic Match (%)": score["semantic_score"],
+
+                "Recommendation": (
+                    "Recommended"
+                    if score["final_score"] >= 60
+                    else "Consider"
+                )
+
+            })
+
+        df = pd.DataFrame(download_data)
+
+        st.subheader("📥 Export Ranked Results")
+
+        st.caption(
+            f"Export ranking report for {len(ranked_candidates)} screened candidates."
+        )
+
+        csv = df.to_csv(index=False).encode("utf-8")
+
+        json_data = df.to_json(
+            orient="records",
+            indent=4
+        )
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+
+            st.download_button(
+                "📄 Download CSV",
+                csv,
+                file_name="ranked_candidates.csv",
+                mime="text/csv",
+                use_container_width=True
             )
 
-        with col4:
-            st.metric(
-                label="⚡ Processing",
-                value="AI Powered"
+        with col2:
+
+            st.download_button(
+                "🧾 Download JSON",
+                json_data,
+                file_name="ranked_candidates.json",
+                mime="application/json",
+                use_container_width=True
             )
 
         st.divider()
 
-        st.header("🏆 Ranked Candidates")
+        st.subheader("ℹ️ Scoring Method")
 
-        for rank, candidate in enumerate(ranked_candidates, start=1):
+        st.info(
+        """
+        **Overall Match Score** is calculated using a weighted combination of:
 
-            profile = candidate["profile"]
-            score = candidate["score"]
+        • **Skill Match (70%)** – Compares extracted candidate skills with the required job skills.
 
-            st.markdown("---")
+        • **Semantic Match (30%)** – Uses NLP-based similarity to understand how closely the resume aligns with the job description.
 
-            st.markdown(
-                """
-                <div style="
-                    background:#161b22;
-                    border:1px solid #30363d;
-                    border-radius:16px;
-                    padding:25px;
-                    margin-bottom:30px;
-                ">
-                """,
-                unsafe_allow_html=True
+        Candidates are ranked in descending order based on the Overall Match Score.
+
+        Recommendation Thresholds:
+        - ✅ Recommended : Overall Match ≥ 60%
+        - ⚠️ Consider : Overall Match < 60%
+        """
+        )
+
+        # -----------------------------
+        # AI Recruiter Summary Card
+        # -----------------------------
+
+        st.markdown("""
+        <div style="
+        background:#111827;
+        padding:20px;
+        border-radius:15px;
+        border:1px solid #2d3748;
+        margin-top:20px;
+        margin-bottom:25px;
+        ">
+        """, unsafe_allow_html=True)
+
+        st.markdown(
+            "<h3 style='color:#4F8BF9;'>🤖 AI Recruiter Summary</h3>",
+            unsafe_allow_html=True
+        )
+
+        with st.spinner("Generating AI Recommendation..."):
+
+            summary = generate_recruiter_summary(
+                profile,
+                score,
+                job_profile
             )
 
-            st.markdown(f"## 🥇 Rank #{rank}")
+        st.markdown(summary)
 
-            st.markdown(
-                f"<h2 style='margin-bottom:0px;'>{profile['name']}</h2>",
-                unsafe_allow_html=True
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        # -----------------------------
+        # Skills
+        # -----------------------------
+
+        st.markdown("### 🛠 Skills")
+
+        skills = profile["skills"][:10]
+
+        badges = ""
+
+        for skill in skills:
+            badges += (
+                f"<span style='"
+                "background:#238636;"
+                "padding:7px 14px;"
+                "border-radius:20px;"
+                "margin-right:8px;"
+                "margin-bottom:8px;"
+                "display:inline-block;"
+                "color:white;"
+                "font-weight:600;'>"
+                f"{skill}</span>"
             )
 
-            st.caption("AI Screened Candidate")
+        st.markdown(badges, unsafe_allow_html=True)
 
-            col1, col2, col3 = st.columns(3)
-
-            with col1:
-                st.metric(
-                    "Overall Match",
-                    f"{score['final_score']:.1f}%"
-                )
-                st.progress(score["final_score"] / 100)
-
-            with col2:
-                st.metric(
-                    "Skill Match",
-                    f"{score['skill_score']:.1f}%"
-                )
-                st.progress(score["skill_score"] / 100)
-
-            with col3:
-                st.metric(
-                    "Semantic Match",
-                    f"{score['semantic_score']:.1f}%"
-                )
-                st.progress(score["semantic_score"] / 100)
-
-            # Match Badge
-            score_value = score["final_score"]
-
-            if score_value >= 80:
-                st.success("⭐ Highly Recommended")
-
-            elif score_value >= 60:
-                st.info("✅ Recommended")
-
-            elif score_value >= 40:
-                st.warning("⚠ Needs Review")
-
-            else:
-                st.error("❌ Requires Manual Review")
-
-            st.write("")
-
-            # -----------------------------
-            # AI Recruiter Summary Card
-            # -----------------------------
-
-            st.markdown("""
-            <div style="
-            background:#111827;
-            padding:20px;
-            border-radius:15px;
-            border:1px solid #2d3748;
-            margin-top:20px;
-            margin-bottom:25px;
-            ">
-            """, unsafe_allow_html=True)
-
-            st.markdown(
-                "<h3 style='color:#4F8BF9;'>🤖 AI Recruiter Summary</h3>",
-                unsafe_allow_html=True
-            )
-
-            with st.spinner("Generating AI Recommendation..."):
-
-                summary = generate_recruiter_summary(
-                    profile,
-                    score,
-                    job_profile
-                )
-
-            st.markdown(summary)
-
-            st.markdown("</div>", unsafe_allow_html=True)
-
-            # -----------------------------
-            # Skills
-            # -----------------------------
-
-            st.markdown("### 🛠 Skills")
-
-            skills = profile["skills"][:10]
-
-            badges = ""
-
-            for skill in skills:
-                badges += (
-                    f"<span style='"
-                    "background:#238636;"
-                    "padding:7px 14px;"
-                    "border-radius:20px;"
-                    "margin-right:8px;"
-                    "margin-bottom:8px;"
-                    "display:inline-block;"
-                    "color:white;"
-                    "font-weight:600;'>"
-                    f"{skill}</span>"
-                )
-
-            st.markdown(badges, unsafe_allow_html=True)
-
-            st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
 st.divider()
 

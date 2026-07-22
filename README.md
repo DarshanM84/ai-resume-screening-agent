@@ -30,7 +30,7 @@ The application intelligently analyzes resumes against a job description, extrac
 
 ## 🌐 Live Demo
 
-🚀 **Try the AI Resume Screening Agent here:**
+🚀 **Live Demo**
 
 https://ai-resume-screening-agent-fn73udascyxegy8ubhrmrn.streamlit.app/
 
@@ -73,7 +73,7 @@ AI-Resume-Screening-Agent
 Clone the repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/AI-Resume-Screening-Agent.git
+git clone https://github.com/DarshanM84/ai-resume-screening-agent.git
 ```
 
 Install dependencies
@@ -92,6 +92,12 @@ Run the application
 
 ```bash
 streamlit run app.py
+```
+
+If the command is not recognized on your system, you can also use:
+
+```bash
+python -m streamlit run app.py
 ```
 
 ---
@@ -143,7 +149,7 @@ The application provides
 
 ---
 
-# 🔮 Future Improvements
+# 🔮 Possible Enhancements
 
 - Sentence Transformer Embeddings
 - FAISS Vector Search

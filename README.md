@@ -1,5 +1,7 @@
 # 🤖 AI Resume Screening Agent
 
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://ai-resume-screening-agent-fn73udascyxegy8ubhrmrn.streamlit.app/)
+
 An AI-powered Resume Screening and Candidate Ranking platform built using **Python, Streamlit, Google Gemini AI, NLP, and Scikit-Learn**.
 
 The application intelligently analyzes resumes against a job description, extracts candidate skills, performs semantic matching, generates recruiter insights using Gemini AI, and ranks applicants based on overall suitability.
@@ -23,6 +25,14 @@ The application intelligently analyzes resumes against a job description, extrac
 ✅ Match Score Visualization
 
 ✅ Multi Resume Screening
+
+---
+
+## 🌐 Live Demo
+
+🚀 **Try the AI Resume Screening Agent here:**
+
+https://ai-resume-screening-agent-fn73udascyxegy8ubhrmrn.streamlit.app/
 
 ---
 

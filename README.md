@@ -149,6 +149,34 @@ The application provides
 
 ---
 
+## 📐 Scoring Method
+
+Each candidate receives an **Overall Match Score** based on two components:
+
+| Component | Weight | Description |
+|-----------|--------|-------------|
+| Skill Match | **70%** | Measures how many required job skills are found in the candidate's resume. |
+| Semantic Match | **30%** | Uses NLP-based similarity to compare the candidate's resume with the job description. |
+
+### Formula
+
+```text
+Overall Match Score =
+(0.70 × Skill Match) +
+(0.30 × Semantic Match)
+```
+
+### Recommendation Logic
+
+| Overall Match | Recommendation |
+|---------------|---------------|
+| ≥ 60% | ✅ Recommended |
+| < 60% | ⚠️ Consider |
+
+Candidates are ranked in descending order based on the Overall Match Score.
+
+---
+
 # 🔮 Possible Enhancements
 
 - Sentence Transformer Embeddings

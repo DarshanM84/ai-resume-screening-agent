@@ -128,7 +128,6 @@ streamlit run app.py
 ## AI Recruiter Summary
 
 ![ai_summary](assets/ai_summary.png)
-
 ---
 
 # 📈 Output
